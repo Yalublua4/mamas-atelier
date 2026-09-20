@@ -814,23 +814,41 @@
       }).join('');
     }
 
-    // Загрузка файлов каталога
+    /    // Загрузка файлов каталога
     async function loadCatalog() {
       try {
         const response = await fetch('catalog.json?v=' + Date.now());
         if (!response.ok) throw new Error('catalog.json не найден');
-        const files = await response.json();
+        const data = await response.json();
 
-        setupSpecialImages(files);
+        // Нормализуем имена файлов (работает и с объектами от scan.js, и с простым массивом)
+        const fileNames = data.map(item => {
+          if (typeof item === 'string') return item;
+          if (item && item.id) return item.id;
+          if (item && item.image) return item.image.replace(/^images\//, '');
+          return null;
+        }).filter(Boolean);
 
-        allProducts = files
-  .map(f => (typeof f === 'object' && f !== null) ? f : parseFilename(f))
-  .filter(Boolean);
+        setupSpecialImages(fileNames);
+
+        // Если scan.js уже отдал готовые объекты товаров, используем их напрямую
+        allProducts = data.map(item => {
+          if (typeof item === 'object' && item !== null && item.title) {
+            return {
+              filename: item.id || (item.image ? item.image.replace(/^images\//, '') : ''),
+              name: item.title,
+              price: item.price || 0,
+              unitText: item.unit || 'за 1 шт.',
+              isAvailable: item.inStock !== false,
+              statusText: (item.inStock !== false) ? 'Доступно к продаже' : 'В данный момент нет в продаже'
+            };
+          }
+          return parseFilename(item);
+        }).filter(Boolean);
 
         renderCatalog();
       } catch (err) {
         console.warn('Загрузка из catalog.json не удалась, показ демонстрационного примера:', err);
-        // Если catalog.json пока не создан, показываем образец работы
         const demoFiles = [
           "Пуговицы-перламутровые_300_SH_A.jpg",
           "Кружево-хлопок_500_M_A.jpg",
@@ -840,7 +858,6 @@
         renderCatalog();
       }
     }
-
     // Обработчики событий
     document.getElementById('search-input').addEventListener('input', renderCatalog);
 
