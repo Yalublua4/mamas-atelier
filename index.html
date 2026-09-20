@@ -817,7 +817,7 @@
     // Загрузка файлов каталога
     async function loadCatalog() {
       try {
-        const response = await fetch('catalog.json');
+        const response = await fetch('catalog.json?v=' + Date.now());
         if (!response.ok) throw new Error('catalog.json не найден');
         const files = await response.json();
 
