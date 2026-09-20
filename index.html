@@ -824,8 +824,8 @@
         setupSpecialImages(files);
 
         allProducts = files
-          .map(f => typeof f === 'string' ? parseFilename(f) : f)
-          .filter(Boolean);
+  .map(f => (typeof f === 'object' && f !== null) ? f : parseFilename(f))
+  .filter(Boolean);
 
         renderCatalog();
       } catch (err) {
